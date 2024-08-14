@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Form</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f2f2f2;
+        }
+
+        .payment-form {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .payment-form h2 {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .payment-form input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+
+        .payment-form button {
+            width: 100%;
+            padding: 10px;
+            background: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .payment-form button:disabled {
+            background: #ccc;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="payment-form">
+        <h2>Payment Form</h2>
+        <form id="payment-form">
+            <input type="text" id="cardholder-name" placeholder="Cardholder Name" required>
+            <input type="text" id="card-number" placeholder="Card Number" required>
+            <input type="text" id="card-expiry" placeholder="MM/YY" required>
+            <input type="text" id="card-cvc" placeholder="CVC" required>
+            <button type="submit">Pay</button>
+        </form>
+    </div>
+
+    <script src="https://js.stripe.com/v3/"></script>
+    <script>
+        const stripe = Stripe('your-publishable-key');
+        const elements = stripe.elements();
+        const form = document.getElementById('payment-form');
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const { error, paymentMethod } = await stripe.createPaymentMethod({
+                type: 'card',
+                card: {
+                    number: document.getElementById('card-number').value,
+                    exp_month: document.getElementById('card-expiry').value.split('/')[0],
+                    exp_year: document.getElementById('card-expiry').value.split('/')[1],
+                    cvc: document.getElementById('card-cvc').value,
+                },
+                billing_details: {
+                    name: document.getElementById('cardholder-name').value,
+                },
+            });
+
+            if (!error) {
+                const response = await fetch('/api/payment', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ id: paymentMethod.id }),
+                });
+
+                const paymentResult = await response.json();
+                alert(paymentResult.message);
+            } else {
+                alert(error.message);
+            }
+        });
+    </script>
+</body>
+
+</html>
